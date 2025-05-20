@@ -228,3 +228,34 @@ The NamespaceLifecycle admission controller will make sure that requests
 ps -ef | grep kube-apiserver | grep admission-plugins
 
 * Validating and Mutating Admission Controllers
+# validating addmission controllers
+## validating addmission controllers are validating the request (allowed/denied)
+# mutating addmission controller can change the object itself before creating it
+## example: storageClass: default
+### custom admission controllers:
+ - MutatingAdmissionWebhook
+ - ValidatingAdmissionWebhook
+#### requires custom admission webhook server deployed
+- requires webhook-service
+- requires webhook-deployment 
+-- if deployed in k8s
+# yaml
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: "pod-policy.example.com"
+webhooks:
+- name: "pod-policy.example.com"
+  rules:
+  - apiGroups:   [""]
+    apiVersions: ["v1"]
+    operations:  ["CREATE"]
+    resources:   ["pods"]
+    scope:       "Namespaced"
+  clientConfig:
+    # url: "https://my-server-controller" - if deployed outside k8s
+    service:
+      namespace: "example-namespace"
+      name: "example-service"
+    caBundle: <CA_BUNDLE> # cert should be added
+  admissionReviewVersions: ["v1"]
