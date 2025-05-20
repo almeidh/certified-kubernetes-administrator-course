@@ -14,6 +14,7 @@ kubectl get daemonsets
 kubectl get pods -o custom-columns="NAME:.metadata.name,PRIORITY:.spec.priorityClassName"
 kubectl create configmap --name my-scheduler-config --form-file=/root/my-scheduler-config.yaml -n kube-system
 ps -ef | grep kube-apiserver | grep admission-plugins
+kubectl create secret tls webhook-server-tls --cert=/root/keys/webhook-server-tls.crt --key=/root/keys/webhook-server-tls.key
 
 * Labels and selectors
 kubectl get pods --selector env=dev
