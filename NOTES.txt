@@ -12,6 +12,7 @@ kubectl label node node01 color=blue
 kubectl create deployment blue --image nginx --replicas 3 --dry-run=client -o yaml > blue.yml
 kubectl get daemonsets
 kubectl get pods -o custom-columns="NAME:.metadata.name,PRIORITY:.spec.priorityClassName"
+kubectl create configmap --name my-scheduler-config --form-file=/root/my-scheduler-config.yaml -n kube-system
 
 
 * Labels and selectors
@@ -167,3 +168,54 @@ spec:
 kubectl get pods -o custom-columns="NAME:.metadata.name,PRIORITY:.spec.priorityClassName"
 
 * Multiple schedulers
+# we can set up multiple schedulers, they can be deployed as a pod as well
+## we can instruct pods to use specific scheduler
+# yaml
+apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+profiles:
+  - schedulerName: my-scheduler-2
+## yaml for pods
+containers:
+  - image: nginx
+    name: nginx
+schedulerName: my-custom-scheduler
+### to check if pod is scheduled:
+kubectl get events -o wide
+kubectl logs my-custom-scheduler --name-space=kube-system
+
+* Configuring Scheduler profiles
+phases of scheduling:
+- Scheduling queue
+- Filtering # filter nodes based on requests. nodes with insufficient resources will not be considered
+- Scoring # scoring nodes, based on requests. node which has the most available resources, gets picked up
+- Binding # binds pod to a node with highest score
+scheduling plugins:
+- Scheduling queue > PrioritySort
+- Filtering > NodeResourcesFit, NodeName, NodeUnschedulable
+- Scoring > NodeResourcesFit, ImageLocality
+- Binding > DefaultBinder
+Kubernetes allows customization of plugins.
+That is achieved by Extensions Points.
+Extensions:
+- Scheduling queue > queueSort
+- Filtering > filter
+- Scoring > score
+- Binding > bind
+https://github.com/kubernetes/community/blob/master/contributors/devel/sig-scheduling/scheduling_code_hierarchy_overview.md
+https://kubernetes.io/blog/2017/03/advanced-scheduling-in-kubernetes/
+https://jvns.ca/blog/2017/07/27/how-does-the-kubernetes-scheduler-work/
+https://stackoverflow.com/questions/28857993/how-does-kubernetes-scheduler-work
+
+* Admission Controllers
+kubectl > 
+  authentication (kube config) > 
+  authorization (rbac) > 
+  admission controllers (enforcing rules) > 
+  create pod
+# view enabled admission controllers
+kube-apiserver -h | grep enable-admission-plugins
+## to enable specific plugin for admission controllers
+add --enable-admission-plugins argument to the kube-apiserver service start
+## to disable specific plugin
+add --disable-admission-plugins
