@@ -1,0 +1,119 @@
+* General
+kubectl run mosquito --image nginx
+kubectl run bee --image nginx --dry-run=client -o yaml > bee.yml
+kubectl describe node controlplane | grep Taints
+kubectl taint node node01 spray=mortein:NoSchedule
+kubectl get pods -o wide
+kubectl taint node controlplane node-role.kubernetes.io/master:NoSchedule- # dash in the end to remove the taint
+kubectl label node node01 color=blue
+kubectl create deployment blue --image nginx --replicas 3 --dry-run=client -o yaml > blue.yml
+
+
+
+* Labels and selectors
+kubectl get pods --selector env=dev
+kubectl get pods --selector env=test --no-headers | wc -l
+kubectl get pods --selector bu=finance --no-headers | wc -l
+kubectl get all --selector env=prod --no-headers | wc -l
+
+* Taints and tolerations
+# only used for restricting nodes to accept/not accept pods
+## not used to tell pods to go to particular pod, instead we tell nodes to accept pods with certain tolerations
+taints are set to nodes, tolerations are set to pods
+kubectl describe node kubemaster | grep Taint
+kubectl taint nodes node-name key=value:taint-effect where taint effect is one of: NoSchedule | PreferNoSchedule | NoExecute
+kubectl taint node node1 app=blue:NoSchedule
+# yaml for pods
+tolerations:
+- key: app
+  operator: "Equal"
+  value: "blue"
+  effect: "NoSchedule"
+
+* Node selectors
+# labeling the node
+## telling pods to target specific node
+### we cannot utilize advanced expressions like OR or NOT using node selectors
+kubectl label node node-name label-key=label-value
+kubectl label node node1 size=Large
+# yaml
+containers:
+nodeSelector:
+  size: Large
+
+* Node affinity
+# ensure that the pods are hosted on particular nodes
+## we can utilize advanced expressions like OR or NOT using node affinity
+### node affinity types: 
+ - requiredDuringSchedulingIgnoredDuringExecution
+ - preferredDuringSchedulingIgnoredDuringExecution
+ - (planned) requiredDuringSchedulingRequiredDuringExecution
+# yaml
+containers:
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: size
+          operator: In # NotIn | Exists (values not needed for exists)
+          values:
+          - Large
+
+* Node affinity with the combination of Taints and tolerations
+## can be used to achive specific node selection + to avoid other pods being placed to specific nodes
+
+* Resource requirements and limits
+1G - Gigabyte = 1 000 000 000 bytes
+1M - Megabyte = 1 000 000 bytes
+1K - Kilobyte = 1 000 bytes
+
+1Gi - Gibibyte = 1 073 741 824 bytes
+1Mi - Mebibyte = 1 048 576 bytes
+1Ki - Kibibyte = 1 024 bytes
+# yaml
+containers:
+- name:
+  image:
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 1
+    limits:
+      memory: 2Gi
+      cpu: 2
+      
+* LimitRange
+# applicable on namespace level
+# yaml
+apiVersion: v1
+kind: LimitRange
+metadata: 
+    name: cpu-resource-constraint
+spec:
+    limits:
+    - default:
+        cpu: 500m
+      defaultRequest:
+        cpu: 500m
+      max:
+        cpu: "1"
+      min:
+        cpu: 100m
+      type: Container
+
+* ResourceQuota
+# set hard limits for requests and limits
+## used on namespace level
+# yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+    name: my-resource-quota
+spec:
+    hard:
+      requests.cpu: 4
+      requests.memory: 4Gi
+      limits.cpu: 10
+      limits.memory: 10Gi
+
