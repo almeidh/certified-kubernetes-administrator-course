@@ -1,4 +1,7 @@
 * General
+## we can set node name to the pod, to bypass scheduler and place the pod on that node directly
+
+* Commands
 kubectl run mosquito --image nginx
 kubectl run bee --image nginx --dry-run=client -o yaml > bee.yml
 kubectl describe node controlplane | grep Taints
@@ -7,7 +10,8 @@ kubectl get pods -o wide
 kubectl taint node controlplane node-role.kubernetes.io/master:NoSchedule- # dash in the end to remove the taint
 kubectl label node node01 color=blue
 kubectl create deployment blue --image nginx --replicas 3 --dry-run=client -o yaml > blue.yml
-
+kubectl get daemonsets
+kubectl get pods -o custom-columns="NAME:.metadata.name,PRIORITY:.spec.priorityClassName"
 
 
 * Labels and selectors
@@ -117,3 +121,49 @@ spec:
       limits.cpu: 10
       limits.memory: 10Gi
 
+* Daemonsets
+# Like ReplicaSets, but runs each of the pods on a separate node
+## ensures 1 copy of the pod is always present in all nodes in the cluster
+kubectl get ds -a
+
+* Static pods
+# kubelet managing pods, works at pod level and can manage pods only
+## manifests of the pods stored in the directory under
+/etc/kubernetes/manifests
+### if the manifest file gets deleted from dir, pod is also removed
+#### the directory can be any directory. it is set as an argument (--pod-manifest-path) while configuring the service
+#### or it can be set as within the config file, where argument is --config, the file is in .yaml format, containing staticPodPath property
+#### use case - to deploy apps/pods that do not fall under k8s management
+#### to identify a static pod, there will be a -<node_name> in the name of the pod, like: redis-node01
+ps -aux | grep kubelet -> to identify how the service has started, check config or --pod-manifest-path to identify manifest location
+
+* Priority classes
+# make sure that high Priority workloads always get scheduled without being interrupted by low Priority workloads
+# define priorities for workloads
+# non-namespace objects
+## priorities defined with numbers, range from -2 147 483 648 to 1 000 000 000. system apps range can go up to 2 000 000 000
+kubectl get priorityclass
+# yaml
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata: 
+  name: high-priority
+value: 1000000000
+description: "Priority class for mission critical pods"
+preemptionPolicy: PreemptLowerPriority # or never
+### by default pods with lover priority will be evicted from the node if no space left for new priority pods
+#### to change this behavior, we can set PreemptLowerPriority to "never"
+### we can also define global priority class with "globalDefault" property set to true
+## associate priority class definitiona to a pod, default value is 0
+## yaml
+apiVersion: v1
+kind: pod
+metadata:
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+  priorityClassName: high-priority
+kubectl get pods -o custom-columns="NAME:.metadata.name,PRIORITY:.spec.priorityClassName"
+
+* Multiple schedulers
