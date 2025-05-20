@@ -13,7 +13,7 @@ kubectl create deployment blue --image nginx --replicas 3 --dry-run=client -o ya
 kubectl get daemonsets
 kubectl get pods -o custom-columns="NAME:.metadata.name,PRIORITY:.spec.priorityClassName"
 kubectl create configmap --name my-scheduler-config --form-file=/root/my-scheduler-config.yaml -n kube-system
-
+ps -ef | grep kube-apiserver | grep admission-plugins
 
 * Labels and selectors
 kubectl get pods --selector env=dev
@@ -219,3 +219,12 @@ kube-apiserver -h | grep enable-admission-plugins
 add --enable-admission-plugins argument to the kube-apiserver service start
 ## to disable specific plugin
 add --disable-admission-plugins
+### Note that the NamespaceExists and NamespaceAutoProvision admission controllers are deprecated 
+  and now replaced by NamespaceLifecycle admission controller.
+The NamespaceLifecycle admission controller will make sure that requests
+  to a non-existent namespace is rejected and that the default namespaces such as
+    default, kube-system and kube-public cannot be deleted.
+# check which plugins are enabled or disabled
+ps -ef | grep kube-apiserver | grep admission-plugins
+
+* Validating and Mutating Admission Controllers
