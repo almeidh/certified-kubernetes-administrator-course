@@ -274,3 +274,17 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/late
 # logs
 kubectl logs pod/<name> -f
 kubectl logs pod/<name> -c <container-name> -f # -f is --follow
+
+* Rolling udates and Rollbacks
+# Rollout
+## rollout > deployment > revision
+kubectl rollout status deployment/my-deployment
+kubectl rollout history deployment/my-deployment
+# Deployment strategy
+* Recreate
+* Rolling Update - Default deployement strategy
+kubectl apply -f deployment-definition.yaml
+kubectl set image deployment/my-app-deployment nginx-container=nginx:1.9.1 # careful
+kubectl describe deployment/my-deployment
+# Rollback
+kubectl rollout undo deployment/my-deployment
