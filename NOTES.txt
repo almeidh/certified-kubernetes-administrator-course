@@ -288,3 +288,237 @@ kubectl set image deployment/my-app-deployment nginx-container=nginx:1.9.1 # car
 kubectl describe deployment/my-deployment
 # Rollback
 kubectl rollout undo deployment/my-deployment
+
+* Commands
+# Dockerfile
+FROM ubuntu
+ENTRYPOINT ['sleep']
+CMD ['5']
+Docker            k8s
+Entrypoint  ---> command
+CMD         ---> args
+# yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ubumtu-sleeper-pod
+spec:
+  containers:
+    - name: ubuntu-sleeper
+      image: ubuntu-sleeper
+      command: ['sleepv2']
+      args: ['10]
+
+Create ConfigMaps
+# imperative
+kubectl create configmap <config-name> --from-literal=<key>=<value>
+kubectl create configmap <config-name> --from-file=app_config.properties
+# declerative
+kubectl create -f ..
+# yaml - set vars directly in pod
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: app-config
+data:
+  APP_COLOR: blue
+  APP_MODE: prod
+
+## yaml - Inject configmap in pod
+  ```
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: simple-webapp-color
+  spec:
+  containers:
+  - name: simple-webapp-color
+    image: simple-webapp-color
+    ports:
+    - containerPort: 8080
+    envFrom:
+    - configMapRef:
+        name: app-config
+### yaml - Inject only specific var from configmap in a pod
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    name: webapp-color
+  name: webapp-color
+spec:
+  containers:
+    - image: kodekloud/webapp-color
+      imagePullPolicy: Always
+      name: webapp-color
+      env:
+        - name: APP_COLOR
+          valueFrom:
+            configMapKeyRef:
+                # The ConfigMap containing the value you want to assign to SPECIAL_LEVEL_KEY
+              name: webapp-config-map
+                # Specify the key associated with the value
+              key: APP_COLOR
+#### yaml - Inject only specific var from secret in a pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers:
+  - name: mycontainer
+    image: nginx
+    env:
+      - name: MY_SECRET_VAR
+        valueFrom:
+          secretKeyRef:
+            name: mysecret
+            key: mysecretkey
+
+* Secrets
+kubectl create secret generic <secret-name> --from-literal=<key>=<value> --from-literal=...
+kubectl create secret generic app-secret --from-literal=DB_HOST=mysql
+kubectl create secret generic app-secret --form-file=app_secret.properties
+echo -n "mysql" | base64
+echo -n "cm9vdA==" | base64 --decode
+
+# yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers:
+  - name: mycontainer
+    image: nginx
+    envFrom:
+      - secretRef:
+          name: mysecret
+
+* Multi container pods
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    name: app
+  name: app
+  namespace: elastic-stack
+spec:
+  containers:
+  - name: sidecar
+    image: kodekloud/filebeat-configured
+    volumeMounts:
+    - mountPath: /var/log/event-simulator/
+      name: log-volume
+  - name: app
+    image: kodekloud/event-simulator
+    imagePullPolicy: Always
+  dnsPolicy: ClusterFirst
+  volumes:
+  - hostPath:
+      path: /var/log/webapp
+      type: DirectoryOrCreate
+    name: log-volume
+
+There are 3 common patterns, when it comes to designing multi-container PODs. 
+The first and what we just saw with the logging service example is known as a side car pattern. 
+The others are the adapter and the ambassador pattern.
+But these fall under the CKAD curriculum and are not required for the CKA exam.
+So we will be discuss these in more detail in the CKAD course.
+
+* Init containers
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp-pod
+  labels:
+    app: myapp
+spec:
+  containers:
+  - name: myapp-container
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  initContainers:
+  - name: init-myservice
+    image: busybox
+    command: ['sh', '-c', 'git clone <some-repository-that-will-be-used-by-application> ; done;']
+
+
+* Self Healing Applications
+Kubernetes supports self-healing applications through ReplicaSets and Replication Controllers. 
+The replication controller helps in ensuring that a POD is re-created automatically when the application within the POD crashes. 
+It helps in ensuring enough replicas of the application are running at all times.
+
+Kubernetes provides additional support to check the health of applications running within PODs and take necessary actions through Liveness and Readiness Probes. 
+However these are not required for the CKA exam and as such they are not covered here. 
+These are topics for the Certified Kubernetes Application Developers (CKAD) exam and are covered in the CKAD course.
+
+* Autoscaling
+HPA, VPA
+- requires metrics server running in the background
+
+Horizontal Pod Autoscaler
+kubectl autoscale deployment my-app --cpu-percent=50 --min=1 --max=10
+(scales the deployment if the cpu rises above 50% setting replicas from 1 to 10)
+- kubectl get hpa
+# yaml
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  creationTimestamp: null
+  name: nginx-deployment
+spec:
+  maxReplicas: 10
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nginx-deployment
+  targetCPUUtilizationPercentage: 50
+status:
+  currentReplicas: 0
+  desiredReplicas: 0
+
+In place resize of pod resources
+as of v1.32 direct pod update results in pod replacement (delete and recreate)
+new feature - 1.27 (alpha), not enabled by default
+FEATURE_GATES=InPlacePodVerticalScaling=true (to enable)
+only cpu and memory resources can be changed
+
+Vertical Pod Autoscaling
+kubectl edit deployment/my-app
+change resources
+VPA does not come built in with Kubernetes, there is no imperative command
+we need to deploy it from kubernetes github
+Consists of 3 components:
+- admission controller
+- recommender
+- updater
+Operates in 4 modes:
+- off, only recommends, does not change anything
+- initial, only changes on pod creation, not later
+- recreate, evicts pods if usage goes beyond range
+- auto, updates existing pods to recommended numbers
+
+kubectl describe vpa my-app
+
+# yaml
+apiVersion: "autoscaling.k8s.io/v1"
+kind: VerticalPodAutoscaler
+metadata:
+  name: hamster-vpa
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: hamster
+  resourcePolicy:
+    containerPolicies:
+      - containerName: '*'
+        minAllowed:
+          cpu: 100m
+          memory: 50Mi
+        maxAllowed:
+          cpu: 1
+          memory: 500Mi
+        controlledResources: ["cpu", "memory"]
