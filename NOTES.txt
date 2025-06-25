@@ -522,3 +522,51 @@ spec:
           cpu: 1
           memory: 500Mi
         controlledResources: ["cpu", "memory"]
+
+OS upgrades
+kube-control-manager --pod-eviction-timeout=5m0s (default)
+kubectl cordon - make unschedulable
+kubectl uncordon - make schedulable
+kubectl drain - marks unschedulable and evicts pods 
+
+Kubernetes releases
+kube-apiserver
+controller-manager
+kube-scheduler
+kubelet
+kube-proxy
+kubectl (can be different)
+these components usually have the same version as the cluster
+kube-apiserver is main (v1.10)
+controller-manager and kube-scheduler can be (x-1), meaning v1.10 or v1.9
+kubelet and kube-proxy can be (x-2), meaning v1.10, v1.9, v1.8
+kubectl can be (x+1 > x-1)
+
+References:
+https://kubernetes.io/docs/concepts/overview/kubernetes-api/
+https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md
+https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api_changes.md
+
+Cluster Upgrade process
+nano /etc/apt/sources.list.d/kubernetes.list -> change to desired version
+sudo apt update
+sudo apt-cache madison kubeadm -> note the desired version 1.32.0-1.1
+
+sudo apt-mark unhold kubeadm && \
+sudo apt-get update && sudo apt-get install -y kubeadm='1.32.0-1.1' && \
+sudo apt-mark hold kubeadm
+
+------------------------------------------------------------------------
+
+# upgrade kubelet & kubectl
+sudo apt-mark unhold kubelet kubectl && \
+sudo apt-get update && sudo apt-get install -y kubelet='1.32.0-1.1' kubectl='1.32.0-1.1' && \
+sudo apt-mark hold kubelet kubectl
+
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+
+# repeat the process for other nodes
+
+# for upgrade run
+kubeadm upgrade node
