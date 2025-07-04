@@ -676,3 +676,87 @@ etcdutl backup performs a raw file-level copy of etcd’s data and WAL files wit
 
 * Security
 
+ssh-keyget -t rsa
+
+openssl genrsa -out my-key.key 1024
+openssl rsa -in my-key.key -pubout > lock.pem
+
+* Certificate Signing Request (CSR)
+openssl req -new -key my-key.key -out my-bank.csr \
+  -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=my-bank.com"
+
+Public keys:
+  *.crt
+  *.pem
+  
+  *.pub
+
+Private keys:
+  *.key
+  *-key.pem
+
+## Certificate Authority (CA)
+
+- Generate Keys
+  ```
+  $ openssl genrsa -out ca.key 2048
+  ```
+- Generate CSR
+  ```
+  $ openssl req -new -key ca.key -subj "/CN=KUBERNETES-CA" -out ca.csr
+  ```
+- Sign certificates
+  ```
+  $ openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt
+  ```
+
+## Generating Client Certificates
+
+#### Admin User Certificates
+
+- Generate Keys
+  ```
+  $ openssl genrsa -out admin.key 2048
+  ```
+- Generate CSR
+  ```
+  $ openssl req -new -key admin.key -subj "/CN=kube-admin" -out admin.csr
+  ```
+- Sign certificates
+  ```
+  $ openssl x509 -req -in admin.csr -CA ca.crt -CAkey ca.key -out admin.crt
+  ```
+  
+- Certificate with admin privilages
+  ```
+  $ openssl req -new -key admin.key -subj "/CN=kube-admin/O=system:masters" -out admin.csr
+  ```
+  
+openssl x509 -in /etc/kubernetes/pki/apiserver.crt -text -noout
+
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: akshay
+spec:
+  signerName: kubernetes.io/kube-apiserver-client
+  usages:
+    - server auth
+  request: 
+    LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQ1ZqQ0NBVDRDQVFBd0VURVBN
+    QTBHQTFVRUF3d0dZV3R6YUdGNU1JSUJJakFOQmdrcWhraUc5dzBCQVFFRgpBQU9DQVE4QU1JSUJD
+    Z0tDQVFFQW16UVlUcFNHc2ZrWFpSVTdKbUV4alBSZjBwRUVya0tKL05CSVhpeDdDVGZBCnd4WmlD
+    ZlhBQS9MaUpFVm4xVnRqVWlXUG1ndVVVZ2E2c0Q4MmY1a1h3N2I4Sy90VUVVeS9vL25HRnBhSnQx
+    Vi8KZHhwUmZCbEVIcStaNGR0NDJaVXN6dFc1UkRtMnJENGJWSHFQSGUvS1IrbER0NWY0Rkc2dEVX
+    aXdwNWJEcitFYQpSTis0bE4rbEFodGxxR2hIb2NNbTZFSHJLWTU3NFBhc0tKUWlncFhMaHhSLzBH
+    eHVIMUZQM0dZUU9aa2pvRktOClpwc1NrU1N2Z0xnVmtPWC9ZempGbDNhYnh1NXYxQUQwR3ZoYnQx
+    Y1ZIWUlkMjhnTEdXVE82ViszM1h6bDJMcWYKbE9IOEs1Z0pHQjMxTmJQUFo3Ym9uMW5DUVBTT2Nr
+    ZC9ramVMSGR4SUJRSURBUUFCb0FBd0RRWUpLb1pJaHZjTgpBUUVMQlFBRGdnRUJBSm02NytSaU9X
+    SmRUeVl1QmpFTG9EYUY5cGs2Qk9aMFFWVGdJUmJaWktJVU9DaTFIbTNyCkxTdVc4NGc4Y1BDRmJT
+    MStGNmpXYnFNUnM1UlE2NGhCZGtEL01yUWRobjNBWW9MdFN5NjV3T21FK29XV3BkNWIKL21uMk4v
+    UmowYnZNRFZnclY0anh5UUVGS3lkVS9xTE9nSWYwZGpDVEI3ZFhSNGdlemRLeElwYjVXNEtXR0ha
+    WgpUNnJ5VjBZd3c4ejBpbm4rU3dIVkhwWndiTDJrM0QycXl6RERnQjJNT2NHUHkweUtHakV2UDRY
+    QVowVFFyMHlCCjdnU1ZsV0xBQmZkYU1rcEJ5V2NEZU9sM09QL29tOVhhV2llWEVJMnpNS1cvVjlL
+    Y294WDdxZEl2MUR0bVBCcFgKU290alRld1RXMERheW9OVGJpSlFiaEV6MVEvRTBkbjhrcFU9Ci0t
+    LS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=
+  expirationSeconds: 600
