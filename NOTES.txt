@@ -760,3 +760,46 @@ spec:
     Y294WDdxZEl2MUR0bVBCcFgKU290alRld1RXMERheW9OVGJpSlFiaEV6MVEvRTBkbjhrcFU9Ci0t
     LS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=
   expirationSeconds: 600
+
+* rbac
+kubectl auth can-i create deployments
+kubectl auth can-i delete nodes
+
+kubectl auth can-i delete pods --as dev-user
+
+* Networking
+
+ip link
+ip addr
+ip addr add 192.168.1.10/24 dev eth0
+
+parsist /etc/network/interfaces 
+
+route
+ip route
+ip route add 192.168.1.0/24 via 192.168.2.1
+
+# forward requests between interfaces 
+cat /proc/sys/net/ipv4/ip_forward 
+
+files:
+/etc/hosts - hosts
+/etc/resolv.conf - nameservers
+/etc/nsswitch.conf - order of ns lookup, files, then dns 
+
+add search property in resolv.conf, specifying the domain. 
+when pinging subdomain, it would automatically append the domain in search property
+
+Records:
+CNAME - name to name
+A - name to IPv4
+AAAA - name to IPv6
+
+nslookup 
+dig
+
+* Configuring CNI
+/opt/cni/bin
+/etc/cni/net.d
+
+ls /etc/cni/net.d - show configured plugin 
