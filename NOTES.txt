@@ -810,3 +810,16 @@ kube-api server manifest files - to check the configuration for IPs:
 CoreDNS
 
 /etc/coredns/Corefile
+
+* Ingress
+
+kubectl create ingress <ingress-name> --rule="host/path=service:port"
+kubectl create ingress ingress-test --rule="wear.my-online-store.com/wear*=wear-service:80"
+https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#-em-ingress-em-
+https://kubernetes.io/docs/concepts/services-networking/ingress
+https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+
+https://kubernetes.github.io/ingress-nginx/examples/
+
+rewrite target: 
+https://kubernetes.github.io/ingress-nginx/examples/rewrite/
