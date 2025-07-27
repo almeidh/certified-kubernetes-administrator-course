@@ -803,3 +803,10 @@ dig
 /etc/cni/net.d
 
 ls /etc/cni/net.d - show configured plugin 
+
+kube-api server manifest files - to check the configuration for IPs:
+/etc/kubernetes/manifests
+
+CoreDNS
+
+/etc/coredns/Corefile
