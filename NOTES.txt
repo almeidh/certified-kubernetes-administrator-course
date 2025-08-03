@@ -1197,3 +1197,29 @@ Debug Service issues:
 DNS Troubleshooting:
 
                      https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/
+
+
+Pre-Requisites - JSON PATH
+In the upcoming lecture we will explore some advanced commands with kubectl utility. But that requires JSON PATH. If you are new to JSON PATH queries get introduced to it first by going through the lectures and practice tests available here.
+
+https://kodekloud.com/p/json-path-quiz
+
+
+
+Once you are comfortable head back here:
+
+
+
+I also have some JSON PATH exercises with Kubernetes Data Objects. Make sure you go through these:
+
+https://mmumshad.github.io/json-path-quiz/index.html#!/?questions=questionskub1
+
+https://mmumshad.github.io/json-path-quiz/index.html#!/?questions=questionskub2
+
+
+JSONPATH
+
+kubectl config view --kubeconfig=my-kube-config -o jsonpath="{.contexts[?(@.context.user=='aws-user')].name}"
+kubectl get pv -o=custom-columns=NAME:.metadata.name,CAPACITY:.spec.capacity.storage --sort-by=.spec.capacity.storage > /opt/outputs/pv-and-capacity-sorted.txt
+kubectl get pv --sort-by=.spec.capacity.storage > /opt/outputs/storage-capacity-sorted.txt
+kubectl config view --kubeconfig=/root/my-kube-config -o=jsonpath='{$.users[*].name}' > /opt/outputs/users.txt
